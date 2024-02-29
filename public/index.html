@@ -1,0 +1,165 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat con WebSocket</title>
+    <style>
+        body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f2f2f2;
+}
+
+#inicio {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #4CAF50;
+    color: #fff;
+}
+
+#inicio h2 {
+    margin-bottom: 20px;
+}
+
+#inicio form {
+    display: flex;
+    flex-direction: column;
+}
+
+#inicio input, #inicio button {
+    padding: 10px;
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+#inicio button {
+    background-color: #fff;
+    color: #4CAF50;
+    cursor: pointer;
+}
+
+#chat-container {
+    max-width: 600px;
+    margin: 20px auto;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    padding: 20px;
+}
+
+#mensajes {
+    list-style: none;
+    padding: 10px;
+    height: 200rem;
+    margin: 0;
+    overflow-y: scroll;
+    max-height: 300px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+#inputMensaje {
+    width: calc(100% - 80px);
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    outline: none;
+}
+
+#enviarBtn {
+    width: 80px;
+    padding: 10px;
+    border: none;
+    background-color: #4CAF50;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+    </style>
+</head>
+<body>
+    <div id="inicio">
+        <h1>ChatJuan</h1>
+        <h2>Ingresa tu nombre para unirte al chat</h2>
+        <form onsubmit="unirseAlChat(event)">
+            <input id="nombreUsuarioInput" type="text" placeholder="Tu nombre" required />
+            <button type="submit">Unirse al Chat</button>
+        </form>
+    </div>
+
+    <div id="chat-container" style="display: none;">
+        <h1>ChatJuan</h1>
+        <ul id="mensajes"></ul>
+        <input id="inputMensaje" autocomplete="off" onkeyup="enviarConEnter(event)" />
+        <button id="enviarBtn" onclick="enviarMensaje()">Enviar</button>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let miNombreUsuario;
+
+        function unirseAlChat(event) {
+            event.preventDefault();
+            const nombreUsuarioInput = document.getElementById('nombreUsuarioInput');
+            const nombreUsuario = nombreUsuarioInput.value.trim();
+            if (nombreUsuario !== '') {
+                // Ocultar el formulario de inicio y mostrar el contenedor del chat
+                document.getElementById('inicio').style.display = 'none';
+                document.getElementById('chat-container').style.display = 'block';
+
+                // Emitir el evento 'nombreUsuario' al servidor con el nombre proporcionado
+                socket.emit('nombreUsuario', nombreUsuario);
+            }
+        }
+
+        socket.on('nombreUsuario', (nombreUsuario) => {
+            miNombreUsuario = nombreUsuario;
+        });
+
+        socket.on('mensaje', ({ nombreUsuario, mensaje }) => {
+    if (nombreUsuario === miNombreUsuario) {
+        nombreUsuario = 'Yo';
+    }
+    agregarMensaje(`${nombreUsuario}: ${mensaje}`);
+});
+
+        function enviarMensaje() {
+    const inputMensaje = document.getElementById('inputMensaje');
+    const mensaje = inputMensaje.value.trim();
+    if (mensaje !== '') {
+        socket.emit('mensaje', mensaje);
+        inputMensaje.value = '';
+        
+    }
+}
+
+        function agregarMensaje(mensaje) {
+            const mensajes = document.getElementById('mensajes');
+            const li = document.createElement('li');
+            li.textContent = mensaje;
+            mensajes.appendChild(li);
+
+            // Desplazar el scroll hacia abajo para mostrar el último mensaje
+            mensajes.scrollTop = mensajes.scrollHeight;
+        }
+
+        function enviarConEnter(event) {
+            if (event.keyCode === 13) {
+                enviarMensaje();
+            }
+        }
+    </script>
+</body>
+</html>
+
